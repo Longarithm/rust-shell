@@ -25,8 +25,9 @@ impl<'a> ShellRunner<'a> {
         self
     }
 
+    #[allow(unused)]
     pub fn example(mut self, example: &'a str) -> Self {
-        self.example = Some(example);
+        // self.example = Some(example);
         self
     }
 
