@@ -62,8 +62,11 @@ fn execute_cd(command: Command) {
 }
 
 fn execute_exit(command: Command) {
-    let status = command.get_args().next().unwrap();
-    std::process::exit(status.to_str().unwrap().parse::<i32>().unwrap());
+    let status = match command.get_args().next() {
+        Some(status) => status.to_str().unwrap().parse::<i32>().unwrap(),
+        None => 0,
+    };
+    std::process::exit(status);
 }
 
 fn main() {
