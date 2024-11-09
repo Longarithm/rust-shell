@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::io::{BufRead, IsTerminal, Write};
 use std::process::Command;
 
@@ -29,8 +28,7 @@ fn parse_by_or(cmd: &str) -> Result<Vec<Command>, std::io::Error> {
     let subcommands = cmd.split("||").collect::<Vec<&str>>();
     let commands = subcommands
         .iter()
-        .map(|subcmd| parse_command(subcmd))
-        .flatten()
+        .flat_map(|subcmd| parse_command(subcmd))
         .flatten()
         .collect();
     Ok(commands)
@@ -40,8 +38,7 @@ fn parse_by_and(cmd: &str) -> Result<Vec<Command>, std::io::Error> {
     let subcommands = cmd.split("&&").collect::<Vec<&str>>();
     let commands = subcommands
         .iter()
-        .map(|subcmd| parse_command(subcmd))
-        .flatten()
+        .flat_map(|subcmd| parse_command(subcmd))
         .flatten()
         .collect();
     Ok(commands)
@@ -52,21 +49,21 @@ fn parse_commands(cmd: &str) -> Result<Vec<Command>, std::io::Error> {
     let subcommands = cmd.split(';').collect::<Vec<&str>>();
     let commands = subcommands
         .iter()
-        .map(|cmd| parse_by_and(cmd).unwrap())
-        .flatten()
+        .flat_map(|cmd| parse_by_and(cmd).unwrap())
         .collect();
     Ok(commands)
 }
 
 fn execute_cd(command: Command) {
     let dir = command.get_args().next().unwrap();
-    match std::env::set_current_dir(dir) {
-        Ok(_) => (),
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            return;
-        }
+    if let Err(e) = std::env::set_current_dir(dir) {
+        eprintln!("Error: {}", e);
     }
+}
+
+fn execute_exit(command: Command) {
+    let status = command.get_args().next().unwrap();
+    std::process::exit(status.to_str().unwrap().parse::<i32>().unwrap());
 }
 
 fn main() {
@@ -75,7 +72,7 @@ fn main() {
 
     loop {
         if stdout.is_terminal() {
-            print!("{}", "> ");
+            print!("> ");
         }
         stdout.flush().unwrap();
 
@@ -95,7 +92,7 @@ fn main() {
                     execute_cd(command);
                 }
                 "exit" => {
-                    return;
+                    return execute_exit(command);
                 }
                 _ => match command.output() {
                     Ok(output) => print!("{}", String::from_utf8(output.stdout).unwrap()),
