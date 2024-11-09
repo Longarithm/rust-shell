@@ -72,6 +72,7 @@ fn execute_exit(command: Command) {
 fn main() {
     let mut stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout();
+    let mut history = Vec::new();
 
     loop {
         if stdout.is_terminal() {
@@ -81,7 +82,7 @@ fn main() {
 
         let maybe_cmd = read_line(&mut stdin);
         let cmd = match maybe_cmd {
-            Ok(cmd) => cmd,
+            Ok(cmd) => cmd.trim().to_string(),
             Err(e) => {
                 eprintln!("Error: {}", e);
                 return;
@@ -89,6 +90,8 @@ fn main() {
         };
 
         let commands = parse_commands(&cmd).unwrap();
+        history.push(cmd);
+
         for mut command in commands {
             match command.get_program().to_str().unwrap() {
                 "cd" => {
@@ -96,6 +99,9 @@ fn main() {
                 }
                 "exit" => {
                     return execute_exit(command);
+                }
+                "history" => {
+                    println!("{}", history.join("\n"));
                 }
                 _ => match command.output() {
                     Ok(output) => print!("{}", String::from_utf8(output.stdout).unwrap()),
